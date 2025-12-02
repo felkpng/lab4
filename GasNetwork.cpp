@@ -460,7 +460,7 @@ void GasNetwork::SaveData() {
         outFile.close();
 
         system("cls");
-        cout << "Saved to data.txt" << endl;
+        cout << "Saved to " << fileName << endl;
     }
 
     else
@@ -614,7 +614,7 @@ vector<vector<int>> FindWays(map<int, vector<int>>& adj, vector<int> way, const 
     vector<vector<int>> ways = {};
 
     for (const int& pointB : adj[start]) {
-        if (pointB != from_point) {
+        if (count(way.begin(), way.end(), pointB) == 0) {
             const auto& founded_ways = FindWays(adj, way, pointB, stop);
             for (const auto& w : founded_ways)
                 if (!way.empty()) ways.push_back(w);
