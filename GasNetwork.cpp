@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <cmath>
 #include <map>
 
 #include "GasNetwork.h"
@@ -601,9 +602,146 @@ void GasNetwork::ShowTopo() {
 
 }
 
+vector<vector<int>> FindWays(map<int, vector<int>>& adj, vector<int> way, const int& start, const int& stop) {
+    way.push_back(start);
+    if (start == stop) {
+        return { way };
+    }
+
+    int  from_point = -1;
+    if (way.size() > 1) from_point = way[way.size() - 2];
+
+    vector<vector<int>> ways = {};
+
+    for (const int& pointB : adj[start]) {
+        if (pointB != from_point) {
+            const auto& founded_ways = FindWays(adj, way, pointB, stop);
+            for (const auto& w : founded_ways)
+                if (!way.empty()) ways.push_back(w);
+        }
+    }
+
+    return ways;
+}
+
+void GasNetwork::MaxThread() {
+    system("cls");
+    cout << "start station ID: ";
+    int start = Enter<int>();
+    cout << "stop station ID: ";
+    int stop = Enter<int>();
+
+    map<int, int> throughput_table;
+    throughput_table[500] = 6;
+    throughput_table[700] = 13;
+    throughput_table[1000] = 35;
+    throughput_table[1400] = 100;
+
+    map<int, vector<int>> adj;
+    vector<int> keys;
+    for (const auto& con : connections) {
+        if (count(keys.begin(), keys.end(), con.start_id) == 0) {
+            keys.push_back(con.start_id);
+            adj[con.start_id] = {};
+        }
+
+        if (count(keys.begin(), keys.end(), con.stop_id) == 0) {
+            keys.push_back(con.stop_id);
+            adj[con.stop_id] = {};
+        }
+
+        adj[con.start_id].push_back(con.stop_id);
+    }
+
+    if (count(keys.begin(), keys.end(), start) == 1 && count(keys.begin(), keys.end(), stop) == 1) {
+        vector<int> way;
+        auto found_ways = FindWays(adj, way, start, stop);
+
+        int max_throughput = 0;
+
+        for (const auto& way : found_ways) {
+            for (int i = 0; i < way.size(); i++)
+                cout << way[i] << (i == way.size() - 1 ? "" : " -> ");
+            cout << "  |  ";
+
+            int throughput = 2000;
+            for (int i = 0; i < way.size() - 1; i++)
+                for (const auto& con : connections)
+                    if (con.start_id == way[i] && con.stop_id == way[i + 1])
+                        throughput = min(throughput, pipes[con.pipe_id].getDiameter());
+
+            max_throughput = max(max_throughput, throughput);
+
+            cout << throughput_table[throughput] << " mil m3/24h" << endl;
+        }
+
+        cout << "MaxThread = " << throughput_table[max_throughput] << " mil m3/24h" << endl;
+    }
+    else cout << "error!\n";
+}
+
+void GasNetwork::ShortCut() {
+    system("cls");
+    cout << "start station ID: ";
+    int start = Enter<int>();
+    cout << "stop station ID: ";
+    int stop = Enter<int>();
+
+    map<int, int> throughput_table;
+    throughput_table[500] = 6;
+    throughput_table[700] = 13;
+    throughput_table[1000] = 35;
+    throughput_table[1400] = 100;
+
+    map<int, vector<int>> adj;
+    vector<int> keys;
+    for (const auto& con : connections) {
+        if (count(keys.begin(), keys.end(), con.start_id) == 0) {
+            keys.push_back(con.start_id);
+            adj[con.start_id] = {};
+        }
+
+        if (count(keys.begin(), keys.end(), con.stop_id) == 0) {
+            keys.push_back(con.stop_id);
+            adj[con.stop_id] = {};
+        }
+
+        adj[con.start_id].push_back(con.stop_id);
+    }
+
+    if (count(keys.begin(), keys.end(), start) == 1 && count(keys.begin(), keys.end(), stop) == 1) {
+        vector<int> way;
+        auto found_ways = FindWays(adj, way, start, stop);
+
+        auto shortcut = -1;
+
+        for (const auto& way : found_ways) {
+            int path = 0;
+            for (int i = 0; i < way.size() - 1; i++)
+                for (const auto& con : connections)
+                    if (con.start_id == way[i] && con.stop_id == way[i + 1]) {
+                        auto pipe = pipes[con.pipe_id];
+                        path += round(pipe.getLength() / throughput_table[pipe.getDiameter()]);
+                    }
+
+
+            for (int i = 0; i < way.size(); i++)
+                cout << way[i] << (i == way.size() - 1 ? "" : " -> ");
+            cout << "  |  ";
+
+            cout << path << "sec" << endl;
+            if (shortcut == -1) shortcut = path;
+            else shortcut = min(shortcut, path);
+        }
+
+        cout << "Shortcut = " << shortcut << "sec" << endl;
+    }
+    else cout << "error!" << endl;
+}
+
 void GasNetwork::NetMenu() {
     while (true) {
-        cout << "Menu:\n1. Add pipe\n2. Add station\n3. View all\n4. Search\n5. Add connection\n6. Save\n7. Load\n8. Topological sort\n0. Exit\nChoice: ";
+        cout << "Menu:\n1. Add pipe\n2. Add station\n3. View all\n4. Search\n5. Add connection\n6. Save\n7. Load\n8. Topological sort\n9. MaxThread\n10. Shortcut\n0. Exit\nChoice: ";
 
         int choice = Enter<int>();
         switch (choice) {
@@ -630,6 +768,12 @@ void GasNetwork::NetMenu() {
             break;
         case 8:
             ShowTopo();
+            break;
+        case 9:
+            MaxThread();
+            break;
+        case 10:
+            ShortCut();
             break;
         case 0:
             exit(0);

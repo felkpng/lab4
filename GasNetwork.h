@@ -25,7 +25,6 @@ private:
 	void EraseConnection();
 	std::vector<std::vector<int>> TopoSort();
 	void ShowTopo();
-
 public:
 	GasNetwork();
 
@@ -40,6 +39,8 @@ public:
 	void Search();
 	void SaveData();
 	void LoadData();
+	void MaxThread();
+	void ShortCut();
 
 	void NetMenu();
 
